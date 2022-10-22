@@ -29,15 +29,16 @@ and private keys.
 It also prints your public key in OpenPGP format, so that you can upload it
 again. You can print your public key more times with:
 
-```
+```bash
 bpb print
 ```
 
 If you want to use it to sign git commits, you also need to inform git to call
 it instead of gpg. You can do this with this command:
 
-```
+```bash
 git config --global gpg.program bpb
+git config --global commit.gpgsign true
 ```
 
 You should also provide the public key to people who want to verify your
