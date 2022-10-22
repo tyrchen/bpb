@@ -1,18 +1,18 @@
 use std::time::SystemTime;
 
-use ed25519_dalek as ed25519;
+use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use failure::Error;
 
 use crate::config::Config;
 
 pub struct KeyData {
-    keypair: ed25519::Keypair,
+    keypair: Keypair,
     user_id: String,
     timestamp: u64,
 }
 
 impl KeyData {
-    pub fn create(keypair: ed25519::Keypair, user_id: String, timestamp: u64) -> KeyData {
+    pub fn create(keypair: Keypair, user_id: String, timestamp: u64) -> KeyData {
         KeyData {
             keypair,
             user_id,
@@ -21,9 +21,9 @@ impl KeyData {
     }
 
     pub fn load(config: &Config) -> Result<KeyData, Error> {
-        let keypair = ed25519::Keypair {
-            public: ed25519::PublicKey::from_bytes(&hex::decode(config.public())?)?,
-            secret: ed25519::SecretKey::from_bytes(&hex::decode(&*config.secret()?)?)?,
+        let keypair = Keypair {
+            public: PublicKey::from_bytes(&hex::decode(config.public())?)?,
+            secret: SecretKey::from_bytes(&hex::decode(&*config.secret()?)?)?,
         };
         Ok(KeyData::create(
             keypair,
@@ -45,7 +45,7 @@ impl KeyData {
         ))
     }
 
-    pub fn keypair(&self) -> &ed25519::Keypair {
+    pub fn keypair(&self) -> &Keypair {
         &self.keypair
     }
 

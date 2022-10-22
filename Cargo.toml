@@ -2,25 +2,22 @@
 name = "bpb"
 description = "boats's personal barricade"
 license = "MIT OR Apache-2.0"
-version = "1.1.0"
+version = "1.2.0"
 repository = "https://github.com/withoutboats/bpb"
-edition = "2018"
+edition = "2021"
 authors = ["Without Boats <boats@mozilla.com>"]
 
 [dependencies]
-toml = "0.5"
-rand = "0.6"
-sha2 = "0.8"
-serde_derive = "1"
-serde = "1"
-hex = "0.4"
-failure = "0.1"
+toml = "0.5.9"
+rand = "0.7"
+sha2 = "0.10.6"
+serde = { version = "1.0.147", features = ["derive"] }
+hex = "0.4.3"
+failure = "0.1.8"
+ed25519-dalek= "1.0.1"
 
 [dependencies.pbp]
-version = "0.4.0"
+version = "0.5.0"
 git = "https://github.com/tyrchen/pbp"
-branch = "feature/make-project-up-to-date"
+tag = "v0.5.0"
 features = ["dalek"]
-
-[dependencies.ed25519-dalek]
-version = "0.9"
