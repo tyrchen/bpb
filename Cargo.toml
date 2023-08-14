@@ -14,7 +14,7 @@ sha2 = "0.10.6"
 serde = { version = "1.0.147", features = ["derive"] }
 hex = "0.4.3"
 failure = "0.1.8"
-ed25519-dalek= "1.0.1"
+ed25519-dalek= "2.0.0"
 
 [dependencies.pbp]
 version = "0.5.0"
