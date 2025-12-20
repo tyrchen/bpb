@@ -1,64 +1,171 @@
-# boats's personal barricade
+# bpb - boats's personal barricade
 
-This is a tool to automatically sign git commits, replacing gpg for that
-purpose. It is very opinionated, and only useful if you use gpg the same way I
-do.
+A minimal Git commit signing tool that replaces GPG for signing purposes. Uses ed25519 keys for fast, secure signatures with OpenPGP-compatible output.
 
-# How to install
+## Features
 
-```
-cargo install bpb
-```
+- Ed25519 elliptic curve signatures (stronger and faster than RSA)
+- Multiple named identities for different contexts (work, personal, opensource)
+- Automatic identity selection based on git config
+- OpenPGP-compatible output (works with GitHub signature verification)
+- External secret storage support (pass, 1Password, custom scripts)
+- Transparent GPG fallback for unsupported operations
 
-# How to set up
+## Installation
 
-Once you've installed this program, you should run the `bpb init` subcommand.
-This command expects you to pass a userid argument. For example, this is how I
-would init it:
-
-```
-bpb init "withoutboats <boats@mozilla.com>"
-```
-
-You can pass any string you want as your userid, but `"$NAME <$EMAIL>"` is the
-conventional standard for OpenPGP userids.
-
-This will create a file at ~/.bpb_keys.toml. This file contains your bpb public
-and private keys.
-
-It also prints your public key in OpenPGP format, so that you can upload it
-again. You can print your public key more times with:
+Install from GitHub:
 
 ```bash
-bpb print
+cargo install --git https://github.com/withoutboats/bpb
 ```
 
-If you want to use it to sign git commits, you also need to inform git to call
-it instead of gpg. You can do this with this command:
+## Quick Start
+
+### 1. Create your first identity
+
+```bash
+bpb init "Your Name <your.email@example.com>"
+```
+
+This creates `~/.bpb_keys.toml` with your keypair and prints your public key in OpenPGP format.
+
+### 2. Configure Git to use bpb
 
 ```bash
 git config --global gpg.program bpb
 git config --global commit.gpgsign true
 ```
 
-You should also provide the public key to people who want to verify your
-commits. Personally, I just upload the public key to GitHub; you may have other
-requirements.
+### 3. Add your public key to GitHub
 
-# How it replaces gpg
+```bash
+bpb print
+```
 
-If this program receives a `-s` argument, it reads from stdin and then writes a
-signature to stdout. If it receives any arguments it doesn't recognize, it
-delegates to the gpg binary in your path.
+Copy the output and add it to GitHub at Settings → SSH and GPG keys → New GPG key.
 
-This means that this program can be used to replace gpg as a signing tool, but
-it does not replace any other functionality. For example, if you want to verify
-the signatures on other peoples' git commits, it will shell out to gpg.
+## Commands
 
-# Storing your private key
+### Identity Management
 
-By default, your private key is stored as a hex string in `~/.bpb_keys.toml`.
-However, if you are uncomfortable with the possibility of someone reading your
-private key from your home directory, you can instead store it somewhere else.
-To do this, replace the `key` field with a `program` field, and `bpb` will run
-this program, expecting it to print your key to stdout.
+| Command | Description |
+|---------|-------------|
+| `bpb init <userid>` | Create a new identity (use `--id <name>` for named identity) |
+| `bpb list` | List all configured identities |
+| `bpb print` | Print public key in OpenPGP format (use `--id <name>` for specific identity) |
+| `bpb default <name>` | Set the default identity |
+| `bpb rename <old> <new>` | Rename an identity |
+| `bpb remove <name>` | Remove an identity |
+| `bpb export <name>` | Export identity as TOML (add `--secret` to include private key) |
+
+### Signing
+
+| Command | Description |
+|---------|-------------|
+| `bpb --sign` or `bpb -s` | Sign data from stdin (use `--id <name>` for specific identity) |
+
+## Multi-Identity Support
+
+Create separate identities for different contexts:
+
+```bash
+# Create identities
+bpb init "Personal <me@personal.dev>"
+bpb init --id work "Work Name <me@company.com>"
+bpb init --id oss "OSS Name <me@opensource.org>"
+
+# List all identities
+bpb list
+# Output:
+#   default - Personal <me@personal.dev> (default)
+#   work - Work Name <me@company.com>
+#   oss - OSS Name <me@opensource.org>
+
+# Change default
+bpb default work
+```
+
+### Identity Selection Priority
+
+When signing, bpb selects identity in this order:
+
+1. `--id <name>` command-line flag
+2. `BPB_IDENTITY` environment variable
+3. Repository-local git config: `bpb.identity`
+4. Global git config: `bpb.identity`
+5. Default identity from config file
+
+### Per-Repository Identity
+
+Set different identities for different repositories:
+
+```bash
+cd ~/work/project
+git config bpb.identity work
+
+cd ~/personal/project
+git config bpb.identity default
+```
+
+### Override Per-Commit
+
+```bash
+BPB_IDENTITY=oss git commit -m "contribution"
+```
+
+## Configuration
+
+Configuration is stored at `~/.bpb_keys.toml` (override with `BPB_KEYS` environment variable).
+
+### Example Configuration
+
+```toml
+version = 2
+default = "personal"
+
+[identities.personal]
+userid = "Alice <alice@personal.dev>"
+timestamp = 1234567890
+public_key = "abcd1234..."
+
+[identities.personal.secret]
+key = "efgh5678..."
+
+[identities.work]
+userid = "Alice <alice@work.com>"
+timestamp = 1234567891
+public_key = "ijkl9012..."
+
+[identities.work.secret]
+program = "op read 'op://Private/bpb-work/key'"
+```
+
+### External Secret Storage
+
+Instead of storing private keys directly, you can use external programs:
+
+```toml
+[identities.work.secret]
+program = "pass show bpb/work"
+```
+
+```toml
+[identities.work.secret]
+program = "op read 'op://Private/bpb-work/key'"
+```
+
+The program should output the hex-encoded secret key to stdout.
+
+## GPG Compatibility
+
+bpb acts as a drop-in replacement for GPG signing:
+
+- Recognizes GPG signing arguments (`--sign`, `-s`, `-bsau`, etc.)
+- Outputs signatures in OpenPGP format
+- Delegates unrecognized commands to the real `gpg` binary
+
+This means verification and other GPG operations still work through the system GPG.
+
+## License
+
+MIT OR Apache-2.0
