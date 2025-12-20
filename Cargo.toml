@@ -2,7 +2,7 @@
 name = "bpb"
 description = "boats's personal barricade"
 license = "MIT OR Apache-2.0"
-version = "1.3.0"
+version = "1.4.0"
 repository = "https://github.com/withoutboats/bpb"
 edition = "2024"
 authors = ["Without Boats <boats@mozilla.com>"]
