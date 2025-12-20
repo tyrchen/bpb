@@ -4,13 +4,12 @@ mod tests;
 
 use crate::config::Config;
 use crate::key_data::KeyData;
-use ed25519::Keypair;
-use ed25519_dalek as ed25519;
-use failure::{bail, Error};
+use anyhow::{Result, bail};
+use ed25519_dalek::SigningKey;
 use rand::rngs::OsRng;
 use std::time::SystemTime;
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<()> {
     let mut args = std::env::args().skip(1);
     match args.next().as_ref().map(|s| &s[..]) {
         Some("init") => {
@@ -37,20 +36,20 @@ fn gpg_sign_arg(arg: &str) -> bool {
     arg == "--sign" || (arg.starts_with("-") && !arg.starts_with("--") && arg.contains("s"))
 }
 
-fn print_help_message() -> Result<(), Error> {
+fn print_help_message() -> Result<()> {
     println!("bpb: boats's personal barricade");
-    println!("");
+    println!();
     println!("This is a program for signing your git commits.");
-    println!("");
+    println!();
     println!("Arguments:");
     println!("    init <userid>:    (Re)initialize bpb, generate a new keypair.");
     println!("    print:            Print the current bpb public key, in OpenPGP format.");
-    println!("");
+    println!();
     println!("See https://github.com/withoutboats/bpb for more information.");
     Ok(())
 }
 
-fn generate_keypair(userid: String) -> Result<(), Error> {
+fn generate_keypair(userid: String) -> Result<()> {
     let keys_file = keys_file();
     if std::fs::metadata(&keys_file).is_ok() {
         eprintln!(
@@ -63,9 +62,8 @@ fn generate_keypair(userid: String) -> Result<(), Error> {
     let timestamp = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)?
         .as_secs();
-    let mut rng = OsRng {};
-    let keypair = Keypair::generate(&mut rng);
-    let key_data = KeyData::create(keypair, userid, timestamp);
+    let signing_key = SigningKey::generate(&mut OsRng);
+    let key_data = KeyData::create(signing_key, userid, timestamp);
     let config = Config::create(&key_data)?;
 
     let mut file = std::fs::File::create(keys_file)?;
@@ -74,7 +72,7 @@ fn generate_keypair(userid: String) -> Result<(), Error> {
     Ok(())
 }
 
-fn print_public_key() -> Result<(), Error> {
+fn print_public_key() -> Result<()> {
     let mut file = std::fs::File::open(keys_file())?;
     let config = Config::load(&mut file)?;
     let keypair = KeyData::load(&config)?;
@@ -82,7 +80,7 @@ fn print_public_key() -> Result<(), Error> {
     Ok(())
 }
 
-fn verify_commit() -> Result<(), Error> {
+fn verify_commit() -> Result<()> {
     use std::io::Read;
 
     let mut commit = String::new();
