@@ -16,7 +16,7 @@ A minimal Git commit signing tool that replaces GPG for signing purposes. Uses e
 Install from GitHub:
 
 ```bash
-cargo install --git https://github.com/withoutboats/bpb
+cargo install --git https://github.com/tyrchen/bpb
 ```
 
 ## Quick Start
